@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>團康分隊系統</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&family=Bungee&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f0f1a;
+    --card-bg: #1a1a2e;
+    --card-border: #2a2a4a;
+    --orange: #ff8c00;
+    --orange-glow: rgba(255,140,0,0.3);
+    --team-a: #ff4d6d;
+    --team-b: #4cc9f0;
+    --leader: #ffd60a;
+    --text: #e0e0ff;
+    --muted: #888aaa;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans TC', sans-serif;
+    min-height: 100vh;
+    padding: 20px;
+    background-image: radial-gradient(ellipse at 20% 20%, rgba(255,140,0,0.05) 0%, transparent 50%),
+                      radial-gradient(ellipse at 80% 80%, rgba(76,201,240,0.05) 0%, transparent 50%);
+  }
+
+  header {
+    text-align: center;
+    padding: 24px 0 32px;
+  }
+  header h1 {
+    font-family: 'Bungee', sans-serif;
+    font-size: clamp(1.8rem, 4vw, 3rem);
+    color: var(--orange);
+    letter-spacing: 2px;
+    text-shadow: 0 0 30px var(--orange-glow);
+  }
+  header p { color: var(--muted); margin-top: 6px; font-size: 0.9rem; }
+
+  .section-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 14px;
+  }
+
+  /* PARTICIPANTS */
+  .participants-section { max-width: 900px; margin: 0 auto 32px; }
+  .participant-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 10px;
+  }
+  .p-card {
+    background: var(--card-bg);
+    border: 2px solid var(--card-border);
+    border-radius: 14px;
+    padding: 12px 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+    position: relative;
+  }
+  .p-card:hover { border-color: var(--orange); transform: translateY(-2px); }
+  .p-card.selected {
+    border-color: var(--orange);
+    background: rgba(255,140,0,0.1);
+    box-shadow: 0 0 16px var(--orange-glow);
+  }
+  .p-card .avatar {
+    width: 44px; height: 44px;
+    background: #ff8c00;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.3rem;
+  }
+  .p-card .name { font-size: 0.85rem; font-weight: 700; text-align: center; line-height: 1.3; }
+  .p-card .check {
+    position: absolute; top: 6px; right: 8px;
+    font-size: 0.85rem; opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .p-card.selected .check { opacity: 1; color: var(--orange); }
+
+  /* CONTROLS */
+  .controls {
+    max-width: 900px; margin: 0 auto 32px;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 18px;
+    padding: 24px;
+    display: flex; flex-wrap: wrap; gap: 20px; align-items: center;
+  }
+  .control-group { display: flex; flex-direction: column; gap: 8px; }
+  .control-group label { font-size: 0.75rem; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; }
+  .count-selector {
+    display: flex; gap: 6px; flex-wrap: wrap;
+  }
+  .count-btn {
+    background: #252540; border: 1px solid var(--card-border);
+    color: var(--text); border-radius: 8px;
+    padding: 6px 14px; cursor: pointer; font-size: 0.85rem;
+    font-family: 'Noto Sans TC', sans-serif;
+    transition: all 0.15s;
+  }
+  .count-btn:hover { border-color: var(--orange); color: var(--orange); }
+  .count-btn.active { background: var(--orange); border-color: var(--orange); color: #000; font-weight: 700; }
+
+  .toggle-wrap { display: flex; align-items: center; gap: 10px; }
+  .toggle {
+    width: 46px; height: 26px; background: #252540;
+    border-radius: 13px; cursor: pointer; position: relative;
+    border: 1px solid var(--card-border); transition: background 0.25s;
+  }
+  .toggle.on { background: var(--orange); }
+  .toggle::after {
+    content: ''; position: absolute; top: 3px; left: 3px;
+    width: 18px; height: 18px; background: #fff; border-radius: 50%;
+    transition: left 0.25s;
+  }
+  .toggle.on::after { left: 23px; }
+  .toggle-label { font-size: 0.85rem; }
+
+  .btn-main {
+    margin-left: auto;
+    background: var(--orange);
+    color: #000; font-weight: 900; font-size: 1rem;
+    font-family: 'Bungee', sans-serif;
+    border: none; border-radius: 12px;
+    padding: 14px 32px; cursor: pointer;
+    letter-spacing: 1px;
+    transition: all 0.2s;
+    box-shadow: 0 4px 20px var(--orange-glow);
+  }
+  .btn-main:hover { transform: scale(1.05); box-shadow: 0 6px 28px rgba(255,140,0,0.5); }
+  .btn-main:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  /* RESULT */
+  .result-section {
+    max-width: 900px; margin: 0 auto;
+    display: none;
+    animation: fadeUp 0.5s ease forwards;
+  }
+  .result-section.show { display: block; }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .teams-wrap {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+  }
+  @media (max-width: 600px) { .teams-wrap { grid-template-columns: 1fr; } }
+
+  .team-card {
+    border-radius: 18px; padding: 20px;
+    border: 2px solid;
+  }
+  .team-card.a { border-color: var(--team-a); background: rgba(255,77,109,0.07); }
+  .team-card.b { border-color: var(--team-b); background: rgba(76,201,240,0.07); }
+
+  .team-header {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 16px;
+  }
+  .team-dot { width: 14px; height: 14px; border-radius: 50%; }
+  .a .team-dot { background: var(--team-a); box-shadow: 0 0 10px var(--team-a); }
+  .b .team-dot { background: var(--team-b); box-shadow: 0 0 10px var(--team-b); }
+  .team-name {
+    font-family: 'Bungee', sans-serif;
+    font-size: 1.2rem; letter-spacing: 2px;
+  }
+  .a .team-name { color: var(--team-a); }
+  .b .team-name { color: var(--team-b); }
+
+  .member-list { display: flex; flex-direction: column; gap: 8px; }
+  .member-row {
+    display: flex; align-items: center; gap: 10px;
+    background: rgba(255,255,255,0.04); border-radius: 10px; padding: 8px 12px;
+    animation: slideIn 0.4s ease backwards;
+  }
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateX(-10px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+  .m-avatar {
+    width: 34px; height: 34px; border-radius: 50%;
+    background: var(--orange); display: flex; align-items: center; justify-content: center;
+    font-size: 1rem; flex-shrink: 0;
+  }
+  .m-name { font-weight: 700; font-size: 0.9rem; }
+  .leader-badge {
+    margin-left: auto;
+    background: var(--leader); color: #000;
+    font-size: 0.65rem; font-weight: 900; letter-spacing: 1px;
+    padding: 2px 8px; border-radius: 20px;
+  }
+
+  .status-bar {
+    text-align: center; margin-bottom: 16px;
+    font-size: 0.85rem; color: var(--muted);
+  }
+  .status-bar span { color: var(--orange); font-weight: 700; }
+
+  .btn-reset {
+    display: block; margin: 24px auto 0;
+    background: transparent; border: 1px solid var(--card-border);
+    color: var(--muted); border-radius: 10px; padding: 10px 28px;
+    cursor: pointer; font-family: 'Noto Sans TC', sans-serif; font-size: 0.85rem;
+    transition: all 0.2s;
+  }
+  .btn-reset:hover { border-color: var(--orange); color: var(--orange); }
+
+  .select-all-row {
+    display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;
+  }
+  .mini-btn {
+    background: #252540; border: 1px solid var(--card-border);
+    color: var(--muted); border-radius: 8px; padding: 5px 12px;
+    font-size: 0.78rem; cursor: pointer; font-family: 'Noto Sans TC', sans-serif;
+    transition: all 0.15s;
+  }
+  .mini-btn:hover { border-color: var(--orange); color: var(--orange); }
+  .selected-count { color: var(--orange); font-size: 0.8rem; margin-left: auto; align-self: center; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🎮 團康分隊系統</h1>
+  <p>隨機選人・公平分隊・指派隊長</p>
+</header>
+
+<!-- Participants -->
+<div class="participants-section">
+  <div class="section-title">參與者名單</div>
+  <div class="select-all-row">
+    <button class="mini-btn" onclick="selectAll()">全選</button>
+    <button class="mini-btn" onclick="clearAll()">清除</button>
+    <span class="selected-count" id="selectedCount">已選 0 / 12 人</span>
+  </div>
+  <div class="participant-grid" id="participantGrid"></div>
+</div>
+
+<!-- Controls -->
+<div class="controls">
+  <div class="control-group">
+    <label>參與人數</label>
+    <div class="count-selector" id="countSelector">
+      <!-- dynamically generated -->
+    </div>
+  </div>
+  <div class="control-group">
+    <label>系統指派隊長</label>
+    <div class="toggle-wrap">
+      <div class="toggle" id="leaderToggle" onclick="this.classList.toggle('on')"></div>
+      <span class="toggle-label" id="leaderLabel">關閉</span>
+    </div>
+  </div>
+  <button class="btn-main" id="startBtn" onclick="startGame()">開始分隊 🎲</button>
+</div>
+
+<!-- Result -->
+<div class="result-section" id="resultSection">
+  <div class="section-title" style="text-align:center;margin-bottom:20px;">分隊結果</div>
+  <div class="status-bar" id="statusBar"></div>
+  <div class="teams-wrap" id="teamsWrap"></div>
+  <button class="btn-reset" onclick="resetResult()">🔄 重新分隊</button>
+</div>
+
+<script>
+const MEMBERS = [
+  { name: '采玲 Grace', emoji: '🎁' },
+  { name: 'Carson',     emoji: '😊' },
+  { name: 'chun',       emoji: '🍃' },
+  { name: 'DorisWang',  emoji: '😄' },
+  { name: 'Heather Wu', emoji: '🌊' },
+  { name: 'Jenny',      emoji: '🌸' },
+  { name: 'WeiShao Hu', emoji: '😎' },
+  { name: 'Ashley',     emoji: '🌺' },
+  { name: '林家宏',     emoji: '⛰️' },
+  { name: '洪奕鎮',     emoji: '🍄' },
+  { name: '王乃皜',     emoji: '🍀' },
+  { name: '許迦智',     emoji: '🐯' },
+];
+
+let selected = new Set(MEMBERS.map((_, i) => i));
+let targetCount = null;
+
+// render participants
+const grid = document.getElementById('participantGrid');
+MEMBERS.forEach((m, i) => {
+  const card = document.createElement('div');
+  card.className = 'p-card selected';
+  card.id = `pc-${i}`;
+  card.innerHTML = `<div class="avatar">${m.emoji}</div><div class="name">${m.name}</div><div class="check">✓</div>`;
+  card.onclick = () => toggleMember(i);
+  grid.appendChild(card);
+});
+
+function toggleMember(i) {
+  if (selected.has(i)) selected.delete(i);
+  else selected.add(i);
+  document.getElementById(`pc-${i}`).classList.toggle('selected', selected.has(i));
+  updateUI();
+}
+
+function selectAll() {
+  MEMBERS.forEach((_, i) => { selected.add(i); document.getElementById(`pc-${i}`).classList.add('selected'); });
+  updateUI();
+}
+function clearAll() {
+  selected.clear();
+  MEMBERS.forEach((_, i) => document.getElementById(`pc-${i}`).classList.remove('selected'));
+  updateUI();
+}
+
+function updateUI() {
+  const n = selected.size;
+  document.getElementById('selectedCount').textContent = `已選 ${n} / ${MEMBERS.length} 人`;
+  // rebuild count buttons
+  const cs = document.getElementById('countSelector');
+  cs.innerHTML = '';
+  // even numbers from 2 to selected count
+  const evens = [];
+  for (let x = 2; x <= n; x += 2) evens.push(x);
+  if (evens.length === 0) {
+    cs.innerHTML = '<span style="color:var(--muted);font-size:0.8rem">請至少選擇 2 人</span>';
+    targetCount = null;
+  } else {
+    evens.forEach(x => {
+      const btn = document.createElement('button');
+      btn.className = 'count-btn' + (targetCount === x ? ' active' : '');
+      btn.textContent = `${x} 人`;
+      btn.onclick = () => setCount(x);
+      cs.appendChild(btn);
+    });
+    // auto select if current target invalid
+    if (!evens.includes(targetCount)) { targetCount = null; }
+  }
+  document.getElementById('startBtn').disabled = !targetCount || targetCount < 2;
+}
+
+function setCount(x) {
+  targetCount = x;
+  updateUI();
+}
+
+// leader toggle label sync
+document.getElementById('leaderToggle').addEventListener('click', function() {
+  setTimeout(() => {
+    document.getElementById('leaderLabel').textContent = this.classList.contains('on') ? '開啟' : '關閉';
+  }, 10);
+});
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function startGame() {
+  if (!targetCount) return;
+  const pool = shuffle([...selected]);
+  const chosen = pool.slice(0, targetCount);
+  const half = targetCount / 2;
+  const teamA = chosen.slice(0, half);
+  const teamB = chosen.slice(half);
+  const withLeader = document.getElementById('leaderToggle').classList.contains('on');
+
+  let leaderA = null, leaderB = null;
+  if (withLeader) {
+    leaderA = teamA[Math.floor(Math.random() * teamA.length)];
+    leaderB = teamB[Math.floor(Math.random() * teamB.length)];
+  }
+
+  // render
+  const wrap = document.getElementById('teamsWrap');
+  wrap.innerHTML = '';
+
+  const renderTeam = (cls, label, members, leader) => {
+    const card = document.createElement('div');
+    card.className = `team-card ${cls}`;
+    card.innerHTML = `
+      <div class="team-header">
+        <div class="team-dot"></div>
+        <div class="team-name">${label}</div>
+        <span style="margin-left:auto;color:var(--muted);font-size:0.8rem">${members.length} 人</span>
+      </div>
+      <div class="member-list" id="ml-${cls}"></div>
+    `;
+    wrap.appendChild(card);
+    const ml = card.querySelector(`#ml-${cls}`);
+    members.forEach((idx, i) => {
+      const m = MEMBERS[idx];
+      const row = document.createElement('div');
+      row.className = 'member-row';
+      row.style.animationDelay = `${i * 0.07}s`;
+      row.innerHTML = `
+        <div class="m-avatar">${m.emoji}</div>
+        <div class="m-name">${m.name}</div>
+        ${idx === leader ? '<span class="leader-badge">👑 隊長</span>' : ''}
+      `;
+      ml.appendChild(row);
+    });
+  };
+
+  renderTeam('a', 'TEAM A', teamA, leaderA);
+  renderTeam('b', 'TEAM B', teamB, leaderB);
+
+  const unselected = MEMBERS.length - selected.size;
+  const skipped = selected.size - targetCount;
+  document.getElementById('statusBar').innerHTML =
+    `本次參與 <span>${targetCount} 人</span>，分為 2 隊，每隊 <span>${half} 人</span>${skipped > 0 ? `，隨機排除 ${skipped} 人` : ''}${withLeader ? '，已指派隊長 👑' : ''}`;
+
+  const rs = document.getElementById('resultSection');
+  rs.classList.add('show');
+  rs.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function resetResult() {
+  const rs = document.getElementById('resultSection');
+  rs.classList.remove('show');
+  rs.innerHTML = `
+    <div class="section-title" style="text-align:center;margin-bottom:20px;">分隊結果</div>
+    <div class="status-bar" id="statusBar"></div>
+    <div class="teams-wrap" id="teamsWrap"></div>
+    <button class="btn-reset" onclick="resetResult()">🔄 重新分隊</button>
+  `;
+}
+
+// init
+updateUI();
+// default select 2 people
+setTimeout(() => { if (!targetCount && selected.size >= 2) setCount(2); }, 0);
+</script>
+</body>
+</html>
